@@ -1,0 +1,11 @@
+.idea
+.vscode
+
+.DS_Store
+[Oo]ut
+[Bb]in
+[Bb]uild
+[Rr]elease
+[Dd]ist
+
+**/node_modules/
