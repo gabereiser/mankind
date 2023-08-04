@@ -102,21 +102,26 @@ class StarSystem(StarSystemBase):
 
 class CharacterBase(BaseModel):
     name: str
-    created: datetime
 
+class CharacterCreate(CharacterBase):
+    pass
 
 class Character(CharacterBase):
-    id: UUID
-    account_id: UUID
-
+    id: str
+    created: datetime
+    account_id: str
+    last_online: str
+    ships: list = []
+    market_orders: list = []
+    market_order_transactions: list = []
     class Config:
-        orm_mode = True
+	    orm_mode = True
 
 
 class AccountBase(BaseModel):
     username: str
     email: str
-    created: datetime
+
 
 
 class AccountUpdate(AccountBase):
@@ -133,9 +138,9 @@ class AccountDelete(AccountBase):
 
 class Account(AccountBase):
     id: UUID
-    banned: bool
-    banned_until: datetime
-    characters: list[Character] = []
+    created: datetime
+    banned: bool = False
+    banned_until: datetime | None = None
 
     class Config:
         orm_mode = True

@@ -12,7 +12,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "changeme")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token")
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -40,15 +40,15 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         token_data = schemas.TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = db.get_account_by_username(db.session(), username=token_data.username)
+    user = db.get_account_by_username(next(db.session()), username=token_data.username)
     if user is None:
         raise credentials_exception
-    return schemas.Account(**user)
+    return user
 
 
 async def get_current_active_user(
     current_user: Annotated[schemas.Account, Depends(get_current_user)]
 ):
     if current_user.banned and (current_user.banned_until > datetime.utcnow()):
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Banned")
     return current_user
