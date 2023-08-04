@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mankind"
+authors = [
+    {name = "Gabriel Reiser", email = "428334+gabereiser@users.noreply.github.com"},
+]
+description = "Mankind Game Server"
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {attr = "mankind.VERSION"}
+
+[tool.isort]
+profile = 'black'
+
+[tool.black]
+max-line-length = 88
+
