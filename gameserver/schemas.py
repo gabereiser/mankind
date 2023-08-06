@@ -33,24 +33,16 @@ class Item(ItemBase):
     id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+class Inventory(BaseModel):
+    id: UUID
+    items: list[Item] = []
 
 
 class ShipBase(BaseModel):
     name: str
-    ship_class: str
-    hp: float  # hull-points
-    ap: float  # armor-points
-    sp: float  # shield-points
-    fp: float  # fuel-points
-    cs: float  # current-speed
-    ws: float  # warp-speed
-    x: float
-    y: float
-    z: float
-    dx: float
-    dy: float
-    dz: float
 
 
 class ShipCreate(ShipBase):
@@ -58,7 +50,25 @@ class ShipCreate(ShipBase):
 
 
 class ShipUpdate(ShipBase):
+    ds: float  # desired-speed
+    dx: float
+    dy: float
+    dz: float
     pass
+
+
+class ShipPosition(ShipBase):
+    id: UUID
+    owner_id: UUID | None = None
+    company_id: UUID | None = None
+    x: float
+    y: float
+    z: float
+    cs: float
+    ds: float  # desired-speed
+    dx: float
+    dy: float
+    dz: float
 
 
 class Ship(ShipBase):
@@ -67,27 +77,41 @@ class Ship(ShipBase):
     company_id: UUID | None = None
     location_id: UUID | None = None
     system_id: UUID
+    ship_class: str
+    hp: float  # hull-points
+    ap: float  # armor-points
+    sp: float  # shield-points
+    ep: float  # energy-points
+    rr: float  # recharge rate
+    cs: float  # current-speed
+
+    ws: float  # warp-speed
+    ds: float  # desired-speed
+    dx: float  # -,
+    dy: float  # -|- The forward-normalized (lookat) vector
+    dz: float  # -'
+    x: float  # -,
+    y: float  # -|- The position vector
+    z: float  # -'
     max_hp: float
     max_ap: float
     max_sp: float
+    max_ep: float
+    max_rr: float
     max_ws: float
     max_cs: float
-    cargo: dict[Item, int]
+    inventory: Inventory
     maxcargo: int
     maxtonnage: int
-    fittings: dict[str, list[Item]] = {}  # keys: 'high' 'mid' 'low'
+    modules: dict[str, list[Item]] = {}  # keys: 'high' 'mid' 'low'
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class StarSystemBase(BaseModel):
     name: str
-    star_class: str
-
-
-class StarSystemCreate(StarSystemBase):
-    pass
+    classification: str
 
 
 class StarSystem(StarSystemBase):
@@ -97,31 +121,90 @@ class StarSystem(StarSystemBase):
     z: float
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+class OrbitalBody(BaseModel):
+    id: UUID
+    system_id: UUID
+    parent_id: UUID | None = None
+    name: str
+    otype: int
+    stype: int
+    axis: float
+    eccentricity: float
+    inclination: float
+    rings: int
+    population: int
+    pressure: float
+    temperature: float
+    gravity: float
+    fertility: float
+
+    class Config:
+        from_attributes = True
+
+
+OrbitalBody.children: list[OrbitalBody] = []
+
+
+class LedgerTransactionBase(BaseModel):
+    amount: float
+    desc: str
+
+
+class LedgerTransactionCreate(LedgerTransactionBase):
+    payer: UUID | None = None
+    payer_type: str = "S"
+
+
+class LedgerTransaction(LedgerTransactionBase):
+    date: datetime
+    payer: UUID | None = None
+    payer_type: str = "S"
+    ledger: UUID
+
+    class Config:
+        from_attributes = True
+
+
+class LedgerBase(BaseModel):
+    pass
+
+
+class Ledger(LedgerBase):
+    id: UUID
+    transactions: list[LedgerTransaction] = []
+
+    class Config:
+        from_attributes = True
 
 
 class CharacterBase(BaseModel):
     name: str
 
+
 class CharacterCreate(CharacterBase):
     pass
 
+
 class Character(CharacterBase):
-    id: str
+    id: UUID
     created: datetime
     account_id: str
     last_online: str
     ships: list = []
     market_orders: list = []
     market_order_transactions: list = []
+    ledger: Ledger
+
     class Config:
-	    orm_mode = True
+        from_attributes = True
 
 
 class AccountBase(BaseModel):
     username: str
     email: str
-
 
 
 class AccountUpdate(AccountBase):
@@ -132,10 +215,6 @@ class AccountCreate(AccountBase):
     password: str
 
 
-class AccountDelete(AccountBase):
-    pass
-
-
 class Account(AccountBase):
     id: UUID
     created: datetime
@@ -143,4 +222,4 @@ class Account(AccountBase):
     banned_until: datetime | None = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
