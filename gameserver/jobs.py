@@ -21,7 +21,6 @@ def start_background_jobs():
         event_loop=get_event_loop(),
     )
     scheduler.start()
-    scheduler.print_jobs()
     if len(scheduler.get_jobs(jobstore)) == 0:
         try:
             scheduler.add_job(minute_job, trigger="cron", id="minute_job", minute="*/1")
@@ -49,6 +48,7 @@ def start_background_jobs():
         except Exception:
             pass
     [scheduler.resume_job(x.id) for x in scheduler.get_jobs()]
+    log.info("JobScheduler: started")
 
 
 def minute_job():

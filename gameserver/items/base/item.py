@@ -1,20 +1,21 @@
-from typing import ClassVar
-from uuid import UUID
+from typing import Dict
 import logging
 from dataclasses import dataclass
 
-ITEMS: dict[str, any] = {}
+ITEMS: Dict[str, any] = {}
 
-logger = logging.getLogger()
+logger = logging.getLogger("uvicorn")
 
 
 def item(key: str):
     def boxed(klazz):
+        if len(key) >= 8:
+            raise Exception(f"item {key} has a symbol that is too long!")
         if key in ITEMS:
-            raise Exception(f"item #{key} already exists!")
+            raise Exception(f"item {key} already exists!")
 
         ITEMS[key] = klazz()
-        print(f"commodity {key} has been added to the network.")
+        print(f"Commodity: {key} has been added to the network.")
         return ITEMS[key]
         # returning inner function
 

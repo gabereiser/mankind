@@ -30,7 +30,7 @@ async def bootstrap() -> None:
         )
     count = db.query(models.StarSystem).count()
     if count == 0:
-        stars = universe.generate_universe(db, 42)
+        stars = await universe.generate_universe(db, 42)
         db.add_all(stars)
         db.commit()
     if not os.path.exists("data/universe.json"):

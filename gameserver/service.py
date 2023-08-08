@@ -1,5 +1,4 @@
 from fastapi.staticfiles import StaticFiles
-import anyio
 import uvicorn
 from typing import Annotated
 from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect
@@ -75,4 +74,4 @@ app.mount("/", StaticFiles(directory="public"), name="public")
 
 if __name__ == "__main__":
     print(f"Server node: {utils.gen_key(64)}")
-    uvicorn.run("service:app", host="0.0.0.0", port=8080, reload=True)
+    uvicorn.run("service:app", host="0.0.0.0", port=8080)

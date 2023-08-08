@@ -2,7 +2,8 @@ from sqlalchemy.orm import Session
 import math
 import models
 import random
-from time import sleep
+import utils
+import asyncio
 
 classifications: list[str] = ["O", "B", "A", "F", "G", "K", "M", "L", "T"]
 
@@ -12,28 +13,22 @@ mtotal: int = 0
 atotal: int = 0
 
 
-def generate_system_name(seed: int) -> str:
-    a = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    r = random.Random(seed)
-    l = len(a) - 1
-    return "{}{}{}-{:04d}".format(
-        a[r.randint(0, l)], a[r.randint(0, l)], a[r.randint(0, l)], r.randint(1, 9999)
-    )
 
-
-sns: set = set([])
-[sns.add(generate_system_name(x)) for x in range(15001)]
-sn: list = list(sns)
-
-
-def generate_universe(db: Session, seed: int) -> list[models.StarSystem]:
-    global stotal, ptotal, mtotal, atotal, sn
+async def generate_universe(db: Session, seed: int) -> list[models.StarSystem]:
+    print("Generating system names, please be patient, this can take up to 10 minutes.")
+    sn: list = await utils.gen_system_names(15001)
+    with open('./data/system_names.txt', 'wt') as fp:
+        for s in sn:
+            fp.write(f"{s}\r\n")
+            await asyncio.sleep(0.0001)
+        fp.close();
+    global stotal, ptotal, mtotal, atotal
     rand = random.Random(seed)
     s: list[models.StarSystem] = []
     print(f"Generating {len(sn)} stars, please be patient")
     for x in range(len(sn)):
         name = sn[x]
-        star = generate_starsystem(x, name)
+        star = await generate_starsystem(x, name)
         try:
             db.add(star)
             db.commit()
@@ -45,7 +40,7 @@ def generate_universe(db: Session, seed: int) -> list[models.StarSystem]:
             # print("o", end="", flush=True)
             db.rollback()
             x -= 1
-
+        await asyncio.sleep(0.0001)
     print("")
     print(
         "Stars: {}, Planets: {}, Moons: {}, Asteroid Fields: {}".format(
@@ -55,7 +50,7 @@ def generate_universe(db: Session, seed: int) -> list[models.StarSystem]:
     return s
 
 
-def generate_starsystem(seed: int, name: str) -> models.StarSystem:
+async def generate_starsystem(seed: int, name: str) -> models.StarSystem:
     r = random.Random(seed)
     c = "{}{}".format(
         classifications[r.randint(0, len(classifications) - 1)], r.randint(0, 9)
@@ -67,7 +62,7 @@ def generate_starsystem(seed: int, name: str) -> models.StarSystem:
     pcount = r.randint(0, 15)
     bodies = []
     for x in range(pcount):
-        b = generate_planet(r.randint(0, 999999999))
+        b = await generate_planet(r.randint(0, 999999999))
         b.starsystem = s
         bodies.append(b)
     bodies.sort(key=lambda x: x.axis)
@@ -86,7 +81,7 @@ def generate_starsystem(seed: int, name: str) -> models.StarSystem:
     if achance >= 4:
         acount = r.randint(0, 15)
         for x in range(acount):
-            a = generate_asteroids(r.randint(0, 999999999))
+            a = await generate_asteroids(r.randint(0, 999999999))
             a.name = f"{s.name} Asteroid Field {intToRoman(x+1)}"
             a.starsystem = s
             bodies.append(a)
@@ -94,7 +89,7 @@ def generate_starsystem(seed: int, name: str) -> models.StarSystem:
     return s
 
 
-def generate_planet(seed: int) -> models.OrbitalBody:
+async def generate_planet(seed: int) -> models.OrbitalBody:
     global ptotal
     r = random.Random(seed)
     axis = r.uniform(0.1, 60)
@@ -133,14 +128,14 @@ def generate_planet(seed: int) -> models.OrbitalBody:
     p.children = []
     mcount = r.randint(0, 5)
     if mcount > 0:
-        m = generate_moon(r.randint(0, 999999999))
+        m = await generate_moon(r.randint(0, 999999999))
         m.parent = p
         p.children.append(m)
     ptotal = ptotal + 1
     return p
 
 
-def generate_moon(seed: int) -> models.OrbitalBody:
+async def generate_moon(seed: int) -> models.OrbitalBody:
     global mtotal
     r = random.Random(seed)
     axis = r.uniform(0.1, 60)
@@ -168,7 +163,7 @@ def generate_moon(seed: int) -> models.OrbitalBody:
     return p
 
 
-def generate_asteroids(seed: int) -> models.OrbitalBody:
+async def generate_asteroids(seed: int) -> models.OrbitalBody:
     global atotal
     r = random.Random(seed)
     axis = r.uniform(0.1, 60)
