@@ -13,15 +13,14 @@ mtotal: int = 0
 atotal: int = 0
 
 
-
 async def generate_universe(db: Session, seed: int) -> list[models.StarSystem]:
     print("Generating system names, please be patient, this can take up to 10 minutes.")
     sn: list = await utils.gen_system_names(15001)
-    with open('./data/system_names.txt', 'wt') as fp:
+    with open("./data/system_names.txt", "wt") as fp:
         for s in sn:
             fp.write(f"{s}\r\n")
             await asyncio.sleep(0.0001)
-        fp.close();
+        fp.close()
     global stotal, ptotal, mtotal, atotal
     rand = random.Random(seed)
     s: list[models.StarSystem] = []
