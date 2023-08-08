@@ -179,6 +179,14 @@ class Ledger(LedgerBase):
     class Config:
         from_attributes = True
 
+class CandleStick(BaseModel):
+    symbol: str
+    timestamp: datetime
+    open_v: float
+    close_v: float
+    high_v: float
+    low_v: float
+    volume: int
 
 class CharacterBase(BaseModel):
     name: str

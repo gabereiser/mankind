@@ -65,11 +65,12 @@ async def websocket_rpc(
     except WebSocketDisconnect:
         pass
 
-
-anyio.run(database.bootstrap)
+@app.on_event("startup")
+async def startup():
+    await database.bootstrap()
 
 app.mount("/", StaticFiles(directory="public"), name="public")
 
 if __name__ == "__main__":
     print(f"Server node: {utils.gen_key(64)}")
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    uvicorn.run("service:app", host="0.0.0.0", port=8080, reload=True)

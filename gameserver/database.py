@@ -9,11 +9,13 @@ import models
 import schemas
 import utils
 import storage
+import jobs
 from space import universe
 
 
 async def bootstrap() -> None:
     models.Base.metadata.create_all(bind=storage.engine)
+    jobs.start_background_jobs()
     db = storage.SessionLocal()
     count = db.query(models.Account).count()
     if count == 0:

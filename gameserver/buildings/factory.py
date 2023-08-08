@@ -1,8 +1,8 @@
 from datetime import datetime
 import schemas
+import models
 
-
-class Factory:
+class Factory(models.Building):
     def install_job(self, job: schemas.BuildingJobCreate):
         pass
 

@@ -51,9 +51,11 @@ class Character(Base, AllFeaturesMixin):
     market_order_transactions = relationship("MarketOrderTransaction")
     ledger_id = Column(Uuid, ForeignKey("ledgers.id"), nullable=False)
     ledger = relationship("Ledger")
-    current_ship_id = Column(Uuid, nullable=True)
     current_location = Column(Uuid, nullable=False)
-    friends_list = relationship("Character", secondary=friendship_table, primaryjoin=friendship_table.c.from_id, secondaryjoin=friendship_table.c.to_id)
+    friends_list = relationship("Character",
+                                secondary=friendship_table,
+                                primaryjoin=id==friendship_table.c.from_id,
+                                secondaryjoin=id==friendship_table.c.to_id)
 
 
 class Company(Base, AllFeaturesMixin):
@@ -81,8 +83,18 @@ class StarSystem(Base, AllFeaturesMixin):
     z = Column(Double, nullable=False)
     classification = Column(String(2), name="class", nullable=False, default="O0")
     bodies = relationship("OrbitalBody", back_populates="starsystem")
-    gates = relationship("StarSystem", secondary=starlink_table, primaryjoin=starlink_table.c.from_id, secondaryjoin=starlink_table.c.to_id)
-
+    gates = relationship("StarSystem",
+                         secondary=starlink_table,
+                         primaryjoin=id==starlink_table.c.from_id,
+                         secondaryjoin=id==starlink_table.c.to_id)
+#
+#station_inventories = Table(
+#    "station_inventories", Base.metadata,
+#    Column("station_id", Uuid, ForeignKey("orbital_bodies.id"), nullable=False, primary_key=True),
+#    Column("character_id", Uuid, ForeignKey("characters.id"), nullable=False, primary_key=True),
+#    Column("inventory_id", Uuid, ForeignKey("inventories.id"), nullable=False, primary_key=True),
+#    UniqueConstraint("colony_id", "character_id", name="unique_colony_inventories")
+#)
 
 class OrbitalBody(Base, AllFeaturesMixin):
     __tablename__ = "orbital_bodies"
@@ -125,7 +137,6 @@ class Inventory(Base, AllFeaturesMixin):
     __tablename__ = "inventories"
     id = Column(Uuid, primary_key=True, index=True, default=uuid.uuid4)
     items = Column(JSON, nullable=False, default="{}")
-    ship = relationship("Ship")
 
 
 class Ship(Base, AllFeaturesMixin):
@@ -145,7 +156,7 @@ class Ship(Base, AllFeaturesMixin):
     )  # L=landed/landing, T=takeoff, E=enroute, W=warp, S=stationary, C=combat
     target_id = Column(Uuid, ForeignKey("ships.id"), nullable=True)
     created = Column(DateTime, default=datetime.datetime.utcnow)
-    ship_class = Column(String)
+    ship_class = Column("class", String, nullable=False)
     hp = Column(Double, nullable=False)
     max_hp = Column(Double, nullable=False)
     ap = Column(Double, nullable=False)
@@ -170,7 +181,9 @@ class Ship(Base, AllFeaturesMixin):
     max_tonnage = Column(Double, nullable=False)
     modules = Column(JSON, nullable=False, default="{}")
     inventory_id = Column(Uuid, ForeignKey("inventories.id"))
-    inventory = relationship("Inventory", back_populates="ship")
+    inventory = relationship("Inventory")
+
+
 
 class Colony(Base, AllFeaturesMixin):
     __tablename__ = "colonies"
@@ -186,32 +199,58 @@ class Colony(Base, AllFeaturesMixin):
     name = Column(String, unique=True, index=True)
     population = Column(Integer)
 
+    buildings = relationship("Building")
+    inventory_id = Column(Uuid, ForeignKey("inventories.id"), nullable=False)
+    inventory = relationship("Inventory")
+
 
 class Building(Base, AllFeaturesMixin):
     __tablename__ = "buildings"
     id = Column(Uuid, primary_key=True, index=True, default=uuid.uuid4)
+    colony_id = Column(Uuid, ForeignKey("colonies.id"), nullable=False, index=True)
+    colony = relationship("Colony", back_populates="buildings")
+    name = Column(String, nullable=False)
+    btype = Column(Integer, nullable=False, default=0)
+    b_class = Column("class", String, nullable=False)
+
+    jobs = relationship("BuildingJob")
 
 
 class BuildingJob(Base, AllFeaturesMixin):
     __tablename__ = "buildings_jobs"
     id = Column(Uuid, primary_key=True, index=True, default=uuid.uuid4)
+    building_id = Column(Uuid, ForeignKey("buildings.id"), nullable=False)
+    building = relationship("Building", back_populates="jobs")
+    recipe_class = Column(String, nullable=False)
+    install_date = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
+    completion_date = Column(DateTime, nullable=False)
 
 
 class MarketOrder(Base, AllFeaturesMixin):
     __tablename__ = "market_orders"
     id = Column(Uuid, primary_key=True, index=True, default=uuid.uuid4)
+    location_id = Column(Uuid, nullable=False)
     issuer_id = Column(Uuid, ForeignKey("characters.id"), nullable=False)
     issuer = relationship("Character", back_populates="market_orders")
     created = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
+    closed = Column(DateTime, nullable=True, default=None)
+    symbol = Column(String, nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    ask_bid = Column(Double, nullable=False)
+    mtype = Column(Integer, nullable=False) # 0=buy order, 1=sell order
+    transactions = relationship("MarketOrderTransaction")
 
 
 class MarketOrderTransaction(Base, AllFeaturesMixin):
     __tablename__ = "market_orders_transactions"
     id = Column(Uuid, primary_key=True, index=True, default=uuid.uuid4)
     market_order_id = Column(Uuid, ForeignKey("market_orders.id"), nullable=False)
+    market_order = relationship("MarketOrder", back_populates="transactions")
     date = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     character_id = Column(Uuid, ForeignKey("characters.id"), nullable=False)
     character = relationship("Character", back_populates="market_order_transactions")
+    ttype = Column(Integer, nullable=False)
+    quantity = Column(Integer, nullable=False)
 
 
 class Ledger(Base, AllFeaturesMixin):
