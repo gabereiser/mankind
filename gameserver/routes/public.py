@@ -14,7 +14,7 @@ def index():
     return StreamingResponse(handler(), media_type="text/html")
 
 
-@router.get("/{page}")
+@router.get("/{page}.cfm", )
 def page_handler(page: str):
     def handler():
         with open(f"public/{page}.html", mode="rb") as fp:
