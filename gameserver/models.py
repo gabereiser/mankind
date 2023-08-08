@@ -9,7 +9,7 @@ from sqlalchemy import (
     DateTime,
     JSON,
     Table,
-    UniqueConstraint
+    UniqueConstraint,
 )
 from sqlalchemy_mixins import AllFeaturesMixin
 from sqlalchemy.orm import relationship
@@ -32,12 +32,16 @@ class Account(Base, AllFeaturesMixin):
     priv = Column(Integer, nullable=False, default=0)
     characters = relationship("Character", back_populates="account")
 
+
 friendship_table = Table(
-    "characters_friendslist", Base.metadata,
+    "characters_friendslist",
+    Base.metadata,
     Column("from_id", Uuid, ForeignKey("characters.id"), primary_key=True),
     Column("to_id", Uuid, ForeignKey("characters.id"), primary_key=True),
-    UniqueConstraint('from_id', 'to_id', name='unique_friendships')
+    UniqueConstraint("from_id", "to_id", name="unique_friendships"),
 )
+
+
 class Character(Base, AllFeaturesMixin):
     __tablename__ = "characters"
     id = Column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -52,10 +56,12 @@ class Character(Base, AllFeaturesMixin):
     ledger_id = Column(Uuid, ForeignKey("ledgers.id"), nullable=False)
     ledger = relationship("Ledger")
     current_location = Column(Uuid, nullable=False)
-    friends_list = relationship("Character",
-                                secondary=friendship_table,
-                                primaryjoin=id==friendship_table.c.from_id,
-                                secondaryjoin=id==friendship_table.c.to_id)
+    friends_list = relationship(
+        "Character",
+        secondary=friendship_table,
+        primaryjoin=id == friendship_table.c.from_id,
+        secondaryjoin=id == friendship_table.c.to_id,
+    )
 
 
 class Company(Base, AllFeaturesMixin):
@@ -68,12 +74,16 @@ class Company(Base, AllFeaturesMixin):
     ledger = relationship("Ledger")
     ships = relationship("Ship", back_populates="company")
 
+
 starlink_table = Table(
-    "starsystem_links", Base.metadata,
+    "starsystem_links",
+    Base.metadata,
     Column("from_id", Uuid, ForeignKey("starsystems.id"), primary_key=True),
     Column("to_id", Uuid, ForeignKey("starsystems.id"), primary_key=True),
-    UniqueConstraint("from_id", "to_id", name="unique_links")
+    UniqueConstraint("from_id", "to_id", name="unique_links"),
 )
+
+
 class StarSystem(Base, AllFeaturesMixin):
     __tablename__ = "starsystems"
     id = Column(Uuid, primary_key=True, index=True, default=uuid.uuid4)
@@ -83,18 +93,23 @@ class StarSystem(Base, AllFeaturesMixin):
     z = Column(Double, nullable=False)
     classification = Column(String(2), name="class", nullable=False, default="O0")
     bodies = relationship("OrbitalBody", back_populates="starsystem")
-    gates = relationship("StarSystem",
-                         secondary=starlink_table,
-                         primaryjoin=id==starlink_table.c.from_id,
-                         secondaryjoin=id==starlink_table.c.to_id)
+    gates = relationship(
+        "StarSystem",
+        secondary=starlink_table,
+        primaryjoin=id == starlink_table.c.from_id,
+        secondaryjoin=id == starlink_table.c.to_id,
+    )
+
+
 #
-#station_inventories = Table(
+# station_inventories = Table(
 #    "station_inventories", Base.metadata,
 #    Column("station_id", Uuid, ForeignKey("orbital_bodies.id"), nullable=False, primary_key=True),
 #    Column("character_id", Uuid, ForeignKey("characters.id"), nullable=False, primary_key=True),
 #    Column("inventory_id", Uuid, ForeignKey("inventories.id"), nullable=False, primary_key=True),
 #    UniqueConstraint("colony_id", "character_id", name="unique_colony_inventories")
-#)
+# )
+
 
 class OrbitalBody(Base, AllFeaturesMixin):
     __tablename__ = "orbital_bodies"
@@ -184,7 +199,6 @@ class Ship(Base, AllFeaturesMixin):
     inventory = relationship("Inventory")
 
 
-
 class Colony(Base, AllFeaturesMixin):
     __tablename__ = "colonies"
     id = Column(Uuid, primary_key=True, index=True, default=uuid.uuid4)
@@ -237,7 +251,7 @@ class MarketOrder(Base, AllFeaturesMixin):
     symbol = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False, default=1)
     ask_bid = Column(Double, nullable=False)
-    mtype = Column(Integer, nullable=False) # 0=buy order, 1=sell order
+    mtype = Column(Integer, nullable=False)  # 0=buy order, 1=sell order
     transactions = relationship("MarketOrderTransaction")
 
 

@@ -28,8 +28,7 @@ async def get_starsystem(
 ):
     return await database.get_starsystem(next(database.session()), id)
 
+
 @router.get("/starsystems/{id}/ships")
-async def get_ships_in_system(
-    id: UUID
-):
+async def get_ships_in_system(id: UUID):
     return await database.get_ships_in_system(next(database.session()), id)

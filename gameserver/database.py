@@ -141,7 +141,11 @@ async def create_character(
     db_char = models.Character(**character.model_dump())
     db_char.ledger = ledger
     db_char.account_id = current_user.id
-    db_char.current_location = db.query(models.OrbitalBody).filter(and_(models.OrbitalBody.otype == 0, models.OrbitalBody.stype == 3)).first()
+    db_char.current_location = (
+        db.query(models.OrbitalBody)
+        .filter(and_(models.OrbitalBody.otype == 0, models.OrbitalBody.stype == 3))
+        .first()
+    )
     db.add(db_char)
     db.commit()
     db.refresh(db_char)
@@ -159,17 +163,38 @@ async def get_starsystem(db: Session, id: UUID) -> models.StarSystem:
 
 
 async def get_ships_in_system(db: Session, id: UUID) -> List[models.Ship]:
-    return db.query(models.Ship).filter(models.Ship.location_type == 'S', models.Ship.location_id == id).all()
+    return (
+        db.query(models.Ship)
+        .filter(models.Ship.location_type == "S", models.Ship.location_id == id)
+        .all()
+    )
+
 
 async def get_ships_in_orbit(db: Session, id: UUID) -> List[models.Ship]:
-    return db.query(models.Ship).filter(models.Ship.location_type == 'B', models.Ship.location_id == id).all()
+    return (
+        db.query(models.Ship)
+        .filter(models.Ship.location_type == "B", models.Ship.location_id == id)
+        .all()
+    )
+
 
 async def get_ships_in_colony(db: Session, id: UUID) -> List[models.Ship]:
-    return db.query(models.Ship).filter(models.Ship.location_type=='C', models.Ship.location_id == id).all()
+    return (
+        db.query(models.Ship)
+        .filter(models.Ship.location_type == "C", models.Ship.location_id == id)
+        .all()
+    )
+
 
 async def get_ships_owned_by(db: Session, id: UUID) -> List[models.Ship]:
-    return db.query(models.Ship).filter(or_(models.Ship.owner_id == id,
-                                        models.Ship.company_id == id)).all()
+    return (
+        db.query(models.Ship)
+        .filter(or_(models.Ship.owner_id == id, models.Ship.company_id == id))
+        .all()
+    )
 
-async def get_ship_in_command_by_player(db: Session, player: models.Character) -> models.Ship:
+
+async def get_ship_in_command_by_player(
+    db: Session, player: models.Character
+) -> models.Ship:
     return db.query(models.Ship).filter(models.Ship.owner_id == player.id).first()

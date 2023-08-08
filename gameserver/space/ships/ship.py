@@ -1,5 +1,5 @@
-
 SHIP_TYPES = {}
+
 
 def ship(key: str):
     def boxed(klazz):

@@ -65,9 +65,11 @@ async def websocket_rpc(
     except WebSocketDisconnect:
         pass
 
+
 @app.on_event("startup")
 async def startup():
     await database.bootstrap()
+
 
 app.mount("/", StaticFiles(directory="public"), name="public")
 
