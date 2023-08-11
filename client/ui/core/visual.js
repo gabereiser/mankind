@@ -1,5 +1,6 @@
+import { Animator } from "./animation.js";
 
-class UIVisual {
+class UIVisual extends Eventable {
 	constructor() {
 		this.visual = document.createElement("div");
 		this.visual.className = "ui-visual";
@@ -10,4 +11,12 @@ class UIVisual {
 		this.parent = parent;
 		parent.visual.appendChild(this.visual);
 	}
+
+	async animate(property, options) {
+		options.target = this;
+		options.property = property;
+		return new Animator(options).animate();
+	}
+
+	async update() { }
 }

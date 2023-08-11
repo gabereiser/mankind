@@ -24,15 +24,13 @@ async def bootstrap() -> None:
             schemas.AccountCreate(
                 username="user",
                 password="password",
-                email="admin@mankind.net",
+                email="admin@exo-space.net",
                 created=datetime.utcnow(),
             ),
         )
     count = db.query(models.StarSystem).count()
     if count == 0:
-        stars = await universe.generate_universe(db, 42)
-        db.add_all(stars)
-        db.commit()
+        stars = universe.generate_universe(db)
     if not os.path.exists("data/universe.json"):
         print("generating json world data")
         with open("data/universe.json", "w") as fp:
@@ -46,23 +44,6 @@ async def bootstrap() -> None:
             )
             fp.flush()
             fp.close()
-
-
-def __get_bodies_dict_list(db: Session, parent: UUID | None, star: UUID) -> List[Dict]:
-    ret: List[Dict] = []
-    for body in (
-        db.query(models.OrbitalBody)
-        .filter(
-            models.OrbitalBody.parent_id == parent,
-            models.OrbitalBody.starsystem_id == star,
-        )
-        .all()
-    ):
-        d = body.__dict__
-        if len(body.children) > 0:
-            d["children"] = __get_bodies_dict_list(db, body.id, star.id)
-        ret.append(d)
-        return ret
 
 
 def session() -> Session:
@@ -161,6 +142,12 @@ async def get_starsystems(
 async def get_starsystem(db: Session, id: UUID) -> models.StarSystem:
     return db.query(models.StarSystem).filter(models.StarSystem.id == id).first()
 
+def get_gates_for_starsystem(db: Session, system: models.StarSystem) -> List[models.StarSystemGate]:
+    return (
+        db.query(models.StarSystemGate)
+        .filter(or_(models.StarSystemGate.from_id==system.id, models.StarSystemGate.to_id==system.id))
+        .all()
+    )
 
 async def get_ships_in_system(db: Session, id: UUID) -> List[models.Ship]:
     return (

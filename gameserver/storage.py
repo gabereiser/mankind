@@ -8,7 +8,7 @@ import config as configuration
 config = configuration.get_config()
 
 if config.debug:
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./data/mankind.db"
+    SQLALCHEMY_DATABASE_URL = "sqlite:///./data/exospace.db"
 else:
     SQLALCHEMY_DATABASE_URL = (
         f"postgresql://#{config.db_user}:#{config.db_pass}@#{config.db_url}"

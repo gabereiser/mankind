@@ -1,8 +1,14 @@
+from typing import List
+from uuid import UUID
+from sqlalchemy import insert, or_
 from sqlalchemy.orm import Session
 import math
+from vec3 import Vec
+import database
 import models
 import random
 import utils
+import math
 import asyncio
 
 classifications: list[str] = ["O", "B", "A", "F", "G", "K", "M", "L", "T"]
@@ -13,18 +19,18 @@ mtotal: int = 0
 atotal: int = 0
 
 
-async def generate_universe(db: Session, seed: int) -> list[models.StarSystem]:
-    print("Loading system names, please be patient, this can take up to 10 minutes.")
+def generate_universe(db: Session) -> list[models.StarSystem]:
+    print("Loading system names, please be patient.")
     sn: list = []
     with open("./data/system_names.txt", "r") as fp:
         sn = fp.readlines()
     global stotal, ptotal, mtotal, atotal
-    rand = random.Random(seed)
+    
     s: list[models.StarSystem] = []
-    print(f"Generating {len(sn)} stars, please be patient")
+    print(f"Generating {len(sn)} stars, please be patient, this can take up to 10 minutes.")
     for x in range(len(sn)):
-        name = sn[x]
-        star = await generate_starsystem(x, name)
+        name = sn[x].replace("\r\n","\n").replace("\n", "")
+        star = generate_starsystem(x, name)
         try:
             db.add(star)
             db.commit()
@@ -32,21 +38,28 @@ async def generate_universe(db: Session, seed: int) -> list[models.StarSystem]:
             stotal = stotal + 1
             s.append(star)
             # print(".", end="", flush=True)
-        except Exception:
+        except Exception as e:
+            print(e)
             # print("o", end="", flush=True)
             db.rollback()
             x -= 1
-        await asyncio.sleep(0.0001)
+        #await asyncio.sleep(0.0001)
+    print("Generating starlinks...")
+    for x in range(len(s)):
+        links = generate_starlinks(db, x, s[x], s.copy())
+        print(f"{s[x].name} starlinks generated {len(links)}")
+    gtotal = db.query(models.StarSystemGate).count()
     print("")
     print(
-        "Stars: {}, Planets: {}, Moons: {}, Asteroid Fields: {}".format(
-            stotal, ptotal, mtotal, atotal
+        "Stars: {}, Planets: {}, Moons: {}, Asteroid Fields: {}, Gates: {}".format(
+            stotal, ptotal, mtotal, atotal, gtotal
         )
     )
+    
     return s
 
 
-async def generate_starsystem(seed: int, name: str) -> models.StarSystem:
+def generate_starsystem(seed: int, name: str) -> models.StarSystem:
     r = random.Random(seed)
     c = "{}{}".format(
         classifications[r.randint(0, len(classifications) - 1)], r.randint(0, 9)
@@ -58,7 +71,7 @@ async def generate_starsystem(seed: int, name: str) -> models.StarSystem:
     pcount = r.randint(0, 15)
     bodies = []
     for x in range(pcount):
-        b = await generate_planet(r.randint(0, 999999999))
+        b = generate_planet(r.randint(0, 999999999))
         b.starsystem = s
         bodies.append(b)
     bodies.sort(key=lambda x: x.axis)
@@ -77,7 +90,7 @@ async def generate_starsystem(seed: int, name: str) -> models.StarSystem:
     if achance >= 4:
         acount = r.randint(0, 15)
         for x in range(acount):
-            a = await generate_asteroids(r.randint(0, 999999999))
+            a = generate_asteroids(r.randint(0, 999999999))
             a.name = f"{s.name} Asteroid Field {intToRoman(x+1)}"
             a.starsystem = s
             bodies.append(a)
@@ -85,7 +98,7 @@ async def generate_starsystem(seed: int, name: str) -> models.StarSystem:
     return s
 
 
-async def generate_planet(seed: int) -> models.OrbitalBody:
+def generate_planet(seed: int) -> models.OrbitalBody:
     global ptotal
     r = random.Random(seed)
     axis = r.uniform(0.1, 60)
@@ -108,30 +121,50 @@ async def generate_planet(seed: int) -> models.OrbitalBody:
     )
     if t == 5:
         p.rings = r.randint(0, 3)
+        p.gravity = r.uniform(20,40)
+        p.pressure = r.uniform(3,10)
+        p.temperature = r.uniform(-400, -200)
     if t == 3:
         if 1.2 > axis < 0.8:
             p.stype = 2
             p.population = r.randint(0, 1000)
             p.fertility = r.uniform(0.005, 0.01)
+            p.gravity = r.uniform(0.8, 1.4)
+            p.pressure = r.uniform(0.4, 0.8)
+            p.temperature = r.uniform(-21,-39)
         else:
             p.population = r.randint(0, 1000000)
             p.fertility = r.uniform(0.5, 1.0)
+            p.gravity = r.uniform(0.8, 1.4)
+            p.pressure = r.uniform(0.8, 1.2)
+            p.temperature = r.uniform(21,39)
     if t == 6:
         p.population = r.randint(0, 10000)
         p.fertility = r.uniform(0, 0.5)
+        p.gravity = r.uniform(0.8, 1.4)
+        p.pressure = r.uniform(0.8, 1.2)
+        p.temperature = r.uniform(21,39)
+    if t == 1:
+        p.population = r.randint(0, 100)
+        p.gravity = r.uniform(0.8, 1.4)
+        p.pressure = r.uniform(0.001, 0.5)
+        p.temperature = r.uniform(41,139)
     if t == 0:
         p.fertility = r.uniform(0, 0.1)
+        p.gravity = r.uniform(0.25,2)
+        p.pressure = r.uniform(0.001,0.1)
+        p.temperature = r.uniform(-400, -200)
     p.children = []
     mcount = r.randint(0, 5)
     if mcount > 0:
-        m = await generate_moon(r.randint(0, 999999999))
+        m = generate_moon(r.randint(0, 999999999))
         m.parent = p
         p.children.append(m)
     ptotal = ptotal + 1
     return p
 
 
-async def generate_moon(seed: int) -> models.OrbitalBody:
+def generate_moon(seed: int) -> models.OrbitalBody:
     global mtotal
     r = random.Random(seed)
     axis = r.uniform(0.1, 60)
@@ -159,7 +192,7 @@ async def generate_moon(seed: int) -> models.OrbitalBody:
     return p
 
 
-async def generate_asteroids(seed: int) -> models.OrbitalBody:
+def generate_asteroids(seed: int) -> models.OrbitalBody:
     global atotal
     r = random.Random(seed)
     axis = r.uniform(0.1, 60)
@@ -183,6 +216,42 @@ async def generate_asteroids(seed: int) -> models.OrbitalBody:
     atotal = atotal + 1
     return p
 
+def generate_starlinks(db: Session, seed: int, star: models.StarSystem, stars: list[models.StarSystem]) -> List:
+    rand = random.Random(seed)
+    r = rand.randint(1, 100)
+    if r > 70: # 30% chance of a 3 gate system
+        r = 3
+    elif r > 50: # 50% chance of a 2 gate system
+        r = 2
+    else:
+        r = 1 # otherwise it's a 1 gate system
+
+    g = database.get_gates_for_starsystem(db, star)
+    if r <= len(g):
+        return g
+
+    stars.sort(key=lambda s: math.sqrt((s.x - star.x)**2 + (s.y - star.y)**2 + (s.z - star.z)**2))
+    limited = stars[:10]
+    ctars = [x for x in limited if x.id != star.id]
+    closest = ctars[:r]
+
+    pairs = []
+    for s in closest:
+        exists = False
+        for existing in g:
+            if (existing.from_id == star.id and existing.to_id == s.id) or (existing.from_id == s.id and existing.to_id == star.id):
+                exists = True;
+        if not exists:
+            try:
+                gate = models.StarSystemGate(from_id=star.id, to_id=s.id)
+                db.add(gate)
+                db.commit()
+                db.refresh(gate)
+                pairs.append(g)
+            except Exception:
+                db.rollback()
+                pass
+    return pairs
 
 def intToRoman(num):
     # Storing roman values of digits from 0-9

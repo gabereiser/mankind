@@ -1,7 +1,9 @@
+from typing import List
 from sqlalchemy import (
     Boolean,
     Column,
     ForeignKey,
+    ForeignKeyConstraint,
     Integer,
     String,
     Uuid,
@@ -12,7 +14,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy_mixins import AllFeaturesMixin
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 from storage import Base
 
 import uuid
@@ -75,13 +77,13 @@ class Company(Base, AllFeaturesMixin):
     ships = relationship("Ship", back_populates="company")
 
 
-starlink_table = Table(
-    "starsystem_links",
-    Base.metadata,
-    Column("from_id", Uuid, ForeignKey("starsystems.id"), primary_key=True),
-    Column("to_id", Uuid, ForeignKey("starsystems.id"), primary_key=True),
-    UniqueConstraint("from_id", "to_id", name="unique_links"),
-)
+class StarSystemGate(Base, AllFeaturesMixin):
+    __tablename__ = "starsystem_links"
+    __table_args__ = (
+        ForeignKeyConstraint(["from_id", "to_id"], ["starsystems.id", "starsystems.id"]),
+    )
+    from_id = Column(Uuid, ForeignKey("starsystems.id"), primary_key=True, index=True, nullable=False)
+    to_id = Column(Uuid, ForeignKey("starsystems.id"), primary_key=True, index=True, nullable=False)
 
 
 class StarSystem(Base, AllFeaturesMixin):
@@ -92,13 +94,8 @@ class StarSystem(Base, AllFeaturesMixin):
     y = Column(Double, nullable=False)
     z = Column(Double, nullable=False)
     classification = Column(String(2), name="class", nullable=False, default="O0")
-    bodies = relationship("OrbitalBody", back_populates="starsystem")
-    gates = relationship(
-        "StarSystem",
-        secondary=starlink_table,
-        primaryjoin=id == starlink_table.c.from_id,
-        secondaryjoin=id == starlink_table.c.to_id,
-    )
+    bodies: Mapped[List["OrbitalBody"]] = relationship("OrbitalBody", back_populates="starsystem")
+
 
 
 #
