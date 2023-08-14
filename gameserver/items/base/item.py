@@ -27,6 +27,7 @@ class ItemBase:
     name: str = ""
     desc: str = ""
     symbol: str = ""
+    category: str = ""
     weight: float = 1.0
     volume: float = 1.0
     natural: bool = False

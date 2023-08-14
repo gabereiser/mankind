@@ -73,5 +73,5 @@ async def startup():
 app.mount("/", StaticFiles(directory="public"), name="public")
 
 if __name__ == "__main__":
-    print(f"Server node: {utils.gen_key(64)}")
+    print(f"Server node: {utils.gen_key(42,64)}")
     uvicorn.run("service:app", host="0.0.0.0", port=8080)

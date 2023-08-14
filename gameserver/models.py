@@ -165,7 +165,7 @@ class Ship(Base, AllFeaturesMixin):
     )  # C=colony.id (landed), B=orbital_body.id (i.e. in orbit or landed), S=starsystem.id (i.e. not in orbit, but in the system)
     state = Column(
         String(1), nullable=False, default="L"
-    )  # L=landed/landing, T=takeoff, E=enroute, W=warp, S=stationary, C=combat
+    )  # L=landed/landing, T=takeoff, E=enroute, W=warp, S=stationary, C=combat, A=approach
     target_id = Column(Uuid, ForeignKey("ships.id"), nullable=True)
     created = Column(DateTime, default=datetime.datetime.utcnow)
     ship_class = Column("class", String, nullable=False)

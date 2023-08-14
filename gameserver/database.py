@@ -142,12 +142,21 @@ async def get_starsystems(
 async def get_starsystem(db: Session, id: UUID) -> models.StarSystem:
     return db.query(models.StarSystem).filter(models.StarSystem.id == id).first()
 
-def get_gates_for_starsystem(db: Session, system: models.StarSystem) -> List[models.StarSystemGate]:
+async def get_gates_for_starsystem(db: Session, system: models.StarSystem) -> List[models.StarSystemGate]:
     return (
         db.query(models.StarSystemGate)
         .filter(or_(models.StarSystemGate.from_id==system.id, models.StarSystemGate.to_id==system.id))
         .all()
     )
+async def get_gates_for_starsystem_by_id(db: Session, id: UUID) -> List[models.StarSystemGate]:
+    return (
+        db.query(models.StarSystemGate)
+        .filter(or_(models.StarSystemGate.from_id==id, models.StarSystemGate.to_id==id))
+        .all()
+    )
+
+async def get_other_starsystem_from_gate(db: Session, fromStar: models.StarSystem, gate: models.StarSystemGate) -> models.StarSystem:
+    return await get_starsystem(db, gate.to_id if gate.from_id == fromStar.id else gate.from_id)
 
 async def get_ships_in_system(db: Session, id: UUID) -> List[models.Ship]:
     return (

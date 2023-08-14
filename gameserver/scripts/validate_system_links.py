@@ -4,12 +4,10 @@ from typing import List
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 import asyncio
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 import database as database
 import models as models
 import space.universe as universe
-import storage
 import utils
 
 def validate(db: Session, star: models.StarSystem, stars: List[models.StarSystem]) -> bool:
@@ -23,27 +21,20 @@ def validate(db: Session, star: models.StarSystem, stars: List[models.StarSystem
         other_end_links = utils.wait(database.get_gates_for_starsystem(db, other_end))
         if len(other_end_links) == 1 and (other_end_links[0] == gates[0]):
             print(f"{star.name} exclusively links to {other_end.name}, attempting to rectify")
-            links = universe.generate_starlinks(db, other_end.__hash__, other_end, stars)
+            links = universe.generate_starlinks(db, hash(utils.gen_key(1, 8)), other_end, stars)
             if len(links) <= 1:
                 return validate(db, star, stars)
-
-
+            else:
+                return True
+            
 def main():
-    models.Base.metadata.create_all(bind=storage.engine)
     db = next(database.session())
-    print("Generating universe...")
-    stars = universe.generate_universe(db)
-    for star in stars:
-        validate(db, star, stars.copy())
+    s = db.query(models.StarSystem).all()
+    print("Validating starlinks...")
+    for star in s:
+        validate(db, star, s)
             
 if __name__ == "__main__":
     main()
     #loop = asyncio.get_event_loop()
     #loop.run_until_complete(main())
-    db = next(database.session())
-    stargates = db.query(models.StarSystem, models.StarSystemGate).join(models.StarSystemGate, or_(models.StarSystemGate.from_id==models.StarSystem.id,models.StarSystemGate.to_id==models.StarSystem.id)).group_by(models.StarSystemGate.from_id).order_by(models.StarSystem.name).all()
-    allstars = {}
-    for s in stargates:
-        if allstars.get(s[0].id) == None:
-            allstars[s[0].id] = 0
-        allstars[s[0].id] += 1

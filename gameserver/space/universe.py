@@ -1,5 +1,6 @@
 from typing import List
 from uuid import UUID
+import anyio
 from sqlalchemy import insert, or_
 from sqlalchemy.orm import Session
 import math
@@ -45,8 +46,9 @@ def generate_universe(db: Session) -> list[models.StarSystem]:
             x -= 1
         #await asyncio.sleep(0.0001)
     print("Generating starlinks...")
+    sc = s.copy()
     for x in range(len(s)):
-        links = generate_starlinks(db, x, s[x], s.copy())
+        links = generate_starlinks(db, x, s[x], sc)
         print(f"{s[x].name} starlinks generated {len(links)}")
     gtotal = db.query(models.StarSystemGate).count()
     print("")
@@ -226,12 +228,10 @@ def generate_starlinks(db: Session, seed: int, star: models.StarSystem, stars: l
     else:
         r = 1 # otherwise it's a 1 gate system
 
-    g = database.get_gates_for_starsystem(db, star)
-    if r <= len(g):
-        return g
+    g = utils.wait(database.get_gates_for_starsystem(db, star))
 
     stars.sort(key=lambda s: math.sqrt((s.x - star.x)**2 + (s.y - star.y)**2 + (s.z - star.z)**2))
-    limited = stars[:10]
+    limited = stars[:6]
     ctars = [x for x in limited if x.id != star.id]
     closest = ctars[:r]
 
@@ -241,12 +241,12 @@ def generate_starlinks(db: Session, seed: int, star: models.StarSystem, stars: l
         for existing in g:
             if (existing.from_id == star.id and existing.to_id == s.id) or (existing.from_id == s.id and existing.to_id == star.id):
                 exists = True;
+                pairs.append(existing)
         if not exists:
             try:
                 gate = models.StarSystemGate(from_id=star.id, to_id=s.id)
                 db.add(gate)
                 db.commit()
-                db.refresh(gate)
                 pairs.append(g)
             except Exception:
                 db.rollback()
